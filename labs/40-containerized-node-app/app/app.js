@@ -31,6 +31,19 @@ export async function buildApp() {
     return reply.view("index.hbs", { quotes });
   });
 
+
+  // API: return quotes as raw JSON
+  app.get("/api/quotes", async (_req, reply) => {
+    const result = await app.pg.query(
+      "SELECT text, author FROM quotes ORDER BY id DESC"
+    );
+
+    return reply.send({
+      count: result.rowCount,
+      quotes: result.rows
+    });
+  });
+
   // Post new quote endpoint
   app.post("/quotes", async (req, reply) => {
     const author = (req.body?.author ?? "").trim();

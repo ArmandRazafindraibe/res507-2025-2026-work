@@ -6,31 +6,48 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>QuoteBoard</title>
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      max-width: 700px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-      background: #111;
-      color: #eee;
-    }
+  body {
+  max-width: 640px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  background: rgb(27, 27, 27);
+  color: brown;
+  }
 
-    form {
-      display: grid;
-      gap: .5rem;
-      margin-bottom: 2rem;
-    }
+  h1 {
+    margin-bottom: 1.5rem;
+    color: chartreuse;
+  }
 
-    input,
-    textarea,
-    button {
-      font: inherit;
-      margin-top: 0.5rem;
-    }
+  form {
+    margin-bottom: 2rem;
+  }
 
-    .quote {
-      margin-bottom: 1rem;
-    }
+  input,
+  textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+  }
+
+  button {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+  }
+
+  .quote {
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+    border-left: 3px solid #ccc;
+  }
+
+  .quote-author {
+    color: #ffd901;
+    font-size: 0.9rem;
+  }
   </style>
 </head>
 
@@ -47,7 +64,7 @@
   {{#each quotes}}
   <div class="quote">
     <div>{{this.text}}</div>
-    <div>— {{this.author}}</div>
+    <div class="quote-author">— {{this.author}}</div>
   </div>
   {{/each}}
   {{else}}
