@@ -29,6 +29,7 @@ jobs:
         run: docker build -t quote-app -f docker/Dockerfile .
 
       - name: Run container
+        working-directory: labs/40-containerized-node-app/app
         run: |
           docker run -d --name quote-app -p 3000:3000 quote-app
           for i in $(seq 1 30); do
@@ -43,6 +44,7 @@ jobs:
           exit 1
 
       - name: Stop container
+        working-directory: labs/40-containerized-node-app/app
         if: always()
         run: |
           docker rm -f quote-app || true
