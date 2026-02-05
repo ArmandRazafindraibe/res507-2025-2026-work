@@ -29,14 +29,14 @@ jobs:
 
       - name: Run container
         run: |
-          docker run -d --name quote-app -p 3000:3000 quote-app
+          docker run -d --name quote-app -p 3050:3050 quote-app
           echo "Container started. Debugging info:"
           docker ps -a
           docker logs quote-app || true
-          netstat -tlnp | grep 3000 || echo "Port 3000 not listening"
+          netstat -tlnp | grep 3050 || echo "Port 3000 not listening"
           for i in $(seq 1 10); do
             echo "Health check attempt $i/10"
-            if curl -fsS http://localhost:3000/health | grep -q "healthy\|ok\|alive"; then
+            if curl -fsS http://localhost:3050/health | grep -q "healthy\|ok\|alive"; then
               echo "Health check passed"
               exit 0
             fi
