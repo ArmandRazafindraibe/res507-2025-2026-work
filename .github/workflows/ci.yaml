@@ -30,16 +30,24 @@ jobs:
       - name: Run container
         run: |
           docker run -d --name quote-app -p 3000:3000 quote-app
-          for i in $(seq 1 30); do
-            if curl -fsS http://localhost:3000/health >/dev/null; then
+          echo "Container started. Debugging info:"
+          docker ps -a
+          docker logs quote-app || true
+          netstat -tlnp | grep 3000 || echo "Port 3000 not listening"
+          for i in $(seq 1 10); do
+            echo "Health check attempt $i/10"
+            if curl -fsS http://localhost:3000/health | grep -q "healthy\|ok\|alive"; then
               echo "Health check passed"
               exit 0
             fi
             sleep 1
           done
-          echo "Health check failed"
+          echo "Health check failed after 10s"
           docker logs quote-app || true
+          docker ps -a
+          netstat -tlnp | grep 3000 || echo "Port 3000 not listening"
           exit 1
+
 
       - name: Stop container
         if: always()
