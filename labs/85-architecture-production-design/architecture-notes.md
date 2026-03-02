@@ -1,169 +1,254 @@
-1. Map the current architecture (Cartographier l'architecture actuelle)
-Tu as déjà le diagramme généré précédemment. Voici les réponses écrites attendues.
+# Kubernetes Architecture Notes
 
-Where does isolation happen? (Où se produit l'isolation ?)
+---
 
-Niveau Conteneur : Isolation des processus et du système de fichiers via les namespaces et cgroups Linux. Ils partagent le noyau de l'hôte mais ne voient pas les autres processus.
+## Map the Current Architecture
 
-Niveau Pod : Isolation réseau (chaque pod a sa propre IP) et contexte d'exécution.
+![Architecture Diagram](image.png)
 
-Niveau Namespace Kubernetes : Isolation logique des ressources au sein du cluster (ex: dev vs prod).
+---
 
-What restarts automatically? (Qu'est-ce qui redémarre automatiquement ?)
+## 1 - Where does isolation happen?
 
-Les Pods : Si le processus de l'application plante ou si la livenessProbe échoue, le Kubelet redémarre le conteneur.
+### Container Level  
+Isolation des processus et du système de fichiers via les namespaces et cgroups Linux.  
+Les conteneurs partagent le noyau de l'hôte mais ne voient pas les autres processus.
 
-Les Répliques manquantes : Si un pod est supprimé manuellement, le Deployment (via le ReplicaSet) en crée un nouveau pour respecter le nombre de répliques désiré.
+### Pod Level  
+Isolation réseau (chaque Pod a sa propre IP) et contexte d'exécution.
 
-What does Kubernetes not manage? (Qu'est-ce que Kubernetes ne gère pas ?)
+### Kubernetes Namespace Level  
+Isolation logique des ressources au sein du cluster (ex : dev vs prod).
 
-Le matériel physique : Serveurs, routeurs, disques physiques.
+---
 
-L'OS des nœuds : Mises à jour du noyau ou de l'OS de la machine hôte.
+# What restarts automatically?
 
-La logique applicative : Bugs de code, schémas de base de données.
+### Pods  
+Si le processus de l'application plante ou si la livenessProbe échoue, le Kubelet redémarre le conteneur.
 
-La persistance des données par défaut : Sans PersistentVolume, les données d'un pod sont perdues à sa suppression.
+### Missing Replicas  
+Si un Pod est supprimé manuellement, le Deployment (via le ReplicaSet) en crée un nouveau pour respecter le nombre de répliques désiré.
 
-2. Compare containers and virtual machines (Comparer conteneurs et machines virtuelles)
-Tableau de comparaison :
+---
 
-Caractéristique	Conteneurs	Machines Virtuelles (VM)
-Partage du Noyau (Kernel)	Partagé avec l'OS hôte	Noyau complet et indépendant par VM
-Temps de démarrage	Secondes (ou millisecondes)	Minutes (boot complet de l'OS)
-Surcharge (Overhead)	Faible (MBs), processus natifs	Élevée (GBs), OS invité complet + hyperviseur
-Isolation de sécurité	Isolation logicielle (namespaces) - Plus faible	Isolation matérielle (virtuelle) - Plus forte
-Complexité opérationnelle	Portable, immuable, orchestré par API	Gestion de patchs OS, configuration lourde
-Réponses :
+# What does Kubernetes not manage?
 
-When would you prefer a VM? Pour des applications nécessitant une isolation de sécurité stricte (multi-tenant hostile), des noyaux OS spécifiques, ou des applications monolithiques héritées (legacy) difficiles à conteneuriser.
+- Le matériel physique : serveurs, routeurs, disques physiques  
+- L'OS des nœuds : mises à jour du noyau ou de l'OS hôte  
+- La logique applicative : bugs de code, schémas de base de données  
+- La persistance des données par défaut : sans PersistentVolume, les données d'un Pod sont perdues à sa suppression  
 
-When would you combine both? Presque toujours dans le cloud. On utilise des VMs pour créer les nœuds du cluster Kubernetes (pour l'isolation infrastructure), et on y fait tourner des conteneurs (pour l'agilité applicative).
+---
 
-3. Introduce horizontal scaling (Introduction à la mise à l'échelle horizontale)
-What changes when you scale? (Qu'est-ce qui change ?)
+# Compare Containers and Virtual Machines
 
-Le nombre de pods (répliques) augmente.
+| Caractéristique | Conteneurs | Machines Virtuelles (VM) |
+|---------------|------------|---------------------------|
+| Partage du noyau | Partagé avec l'OS hôte | Noyau complet et indépendant par VM |
+| Temps de démarrage | Secondes (ou millisecondes) | Minutes (boot complet de l'OS) |
+| Surcharge (Overhead) | Faible (MBs), processus natifs | Élevée (GBs), OS invité complet + hyperviseur |
+| Isolation de sécurité | Isolation logicielle (namespaces) – plus faible | Isolation matérielle (virtuelle) – plus forte |
+| Complexité opérationnelle | Portable, immuable, orchestré par API | Gestion de patchs OS, configuration lourde |
 
-Le Service distribue désormais le trafic entre plusieurs IPs de pods (Load Balancing).
+---
 
-La disponibilité de l'application augmente.
+# When would you prefer a VM?
 
-What does not change? (Qu'est-ce qui ne change pas ?)
+Pour des applications nécessitant une isolation de sécurité stricte (multi-tenant hostile), des noyaux OS spécifiques, ou des applications monolithiques héritées (legacy) difficiles à conteneuriser.
 
-L'adresse IP du Service (ClusterIP) reste la même.
+---
 
-La configuration du Deployment (image, env vars).
+# When would you combine both?
 
-La base de données (c'est toujours la même instance unique partagée).
+Presque toujours dans le cloud.  
 
-4. Simulate failure (Simuler une panne)
-Who recreated the pod? (Qui a recréé le pod ?)
+On utilise des VMs pour créer les nœuds du cluster Kubernetes (isolation infrastructure), et on y fait tourner des conteneurs (agilité applicative).
+
+---
+
+## 3 - Introduce Horizontal Scaling
+
+### What changes when you scale?
+
+- Le nombre de Pods (répliques) augmente  
+- Le Service distribue désormais le trafic entre plusieurs IPs de Pods (Load Balancing)  
+- La disponibilité de l'application augmente  
+
+### What does not change?
+
+- L'adresse IP du Service (ClusterIP) reste la même  
+- La configuration du Deployment (image, variables d'environnement)  
+- La base de données (toujours la même instance unique partagée)  
+
+---
+
+## 4 - Simulate Failure
+
+### Who recreated the Pod?
 
 Le ReplicaSet (contrôlé par le Deployment).
 
-Why? (Pourquoi ?)
+### Why?
 
-Pour maintenir l'état désiré (Desired State). Le Deployment spécifie "3 répliques". Si une disparaît, la boucle de réconciliation de Kubernetes détecte l'écart (3 vs 2) et crée un nouveau pod.
+Pour maintenir l'état désiré (*Desired State*).  
 
-What would happen if the node itself failed? (Et si le nœud échouait ?)
+Le Deployment spécifie par exemple "3 répliques".  
+Si une disparaît, la boucle de réconciliation de Kubernetes détecte l'écart (3 vs 2) et crée un nouveau Pod.
 
-Après un délai (timeout), le Scheduler Kubernetes détecterait que le nœud est "NotReady" et reprogrammerait les pods manquants sur d'autres nœuds sains du cluster.
+### What would happen if the node itself failed?
 
-5. Introduce resource limits (Limites de ressources)
-What are requests vs limits? (Différence Requests vs Limits)
+Après un délai (timeout), le Scheduler Kubernetes détecterait que le nœud est "NotReady" et reprogrammerait les Pods manquants sur d'autres nœuds sains du cluster.
 
-Requests (Demandes) : Le minimum garanti. Le Scheduler l'utilise pour décider sur quel nœud placer le pod (si un nœud n'a pas assez de RAM libre pour la Request, le pod ne s'y lance pas).
+---
 
-Limits (Limites) : Le plafond absolu.
+## 5 - Introduce Resource Limits
 
-CPU : Si dépassé, le conteneur est ralenti (throttled).
+### What are requests vs limits?
 
-RAM : Si dépassé, le conteneur est tué (OOM Killed).
+**Requests** :  
+Le minimum garanti. Le Scheduler l'utilise pour décider sur quel nœud placer le Pod.  
+Si un nœud n'a pas assez de RAM libre pour la request, le Pod ne s'y lance pas.
 
-Why important in multi-tenant systems?
+**Limits** :  
+Le plafond absolu.
 
-Pour éviter le problème du "voisin bruyant" (Noisy Neighbor). Sans limites, une seule application buggée pourrait consommer 100% du CPU/RAM du nœud et faire planter toutes les autres applications hébergées dessus.
+- CPU : si dépassé → le conteneur est ralenti (*throttled*)  
+- RAM : si dépassé → le conteneur est tué (*OOMKilled*)  
 
-6. Add readiness and liveness probes (Sondes de disponibilité et de vie)
-Difference between readiness and liveness :
+### Why important in multi-tenant systems?
 
-Liveness Probe (Suis-je vivant ?) : Vérifie si l'app fonctionne.
+Pour éviter le problème du *Noisy Neighbor*.  
 
-Action si échec : Redémarrer le conteneur.
+Sans limites, une application buggée pourrait consommer 100% du CPU/RAM du nœud et faire planter toutes les autres applications hébergées dessus.
 
-Cas d'usage : Deadlocks, boucles infinies.
+---
 
-Readiness Probe (Suis-je prêt ?) : Vérifie si l'app peut recevoir du trafic.
+## 6 - Add Readiness and Liveness Probes
 
-Action si échec : Couper le trafic (retirer l'IP du Service), mais laisser le pod vivant.
+### Difference between readiness and liveness
 
-Cas d'usage : Démarrage lent (chargement de cache), surcharge temporaire.
+**Liveness Probe**  
+- Vérifie si l'application fonctionne  
+- En cas d'échec → redémarre le conteneur  
+- Cas d'usage : deadlocks, boucles infinies  
 
-Why does this matter in production?
+**Readiness Probe**  
+- Vérifie si l'application peut recevoir du trafic  
+- En cas d'échec → retire l'IP du Service (mais ne redémarre pas le Pod)  
+- Cas d'usage : démarrage lent, surcharge temporaire  
 
-Cela garantit le Zero-Downtime. Lors d'une mise à jour, Kubernetes n'envoie du trafic vers la nouvelle version que lorsqu'elle est "Ready". Si l'app plante, elle est redémarrée automatiquement (Self-healing).
+### Why does this matter in production?
 
-7. Connect Kubernetes to virtualization (Lien avec la virtualisation)
-What runs underneath your k3s cluster?
+Cela garantit le *Zero-Downtime*.
 
-Probablement des Machines Virtuelles (si c'est dans le cloud ou via un outil comme Lima/WSL) ou directement le métal (si Bare Metal).
+Lors d'une mise à jour :
+- Kubernetes n'envoie du trafic vers la nouvelle version que lorsqu'elle est **Ready**
+- Si l'application plante, elle est redémarrée automatiquement (*self-healing*)
 
-Is Kubernetes replacing virtualization?
+---
 
-Non, il l'abstrait. Kubernetes gère les applications, la virtualisation gère l'infrastructure. Ils sont complémentaires.
+## 7 - Connect Kubernetes to Virtualization
 
-Cloud Stack Examples:
+### What runs underneath your k3s cluster?
 
-Cloud Data Center : Serveur Physique -> Hyperviseur -> VM -> OS Linux -> Kubernetes -> Conteneur.
+Probablement des Machines Virtuelles (si cloud, Lima, WSL)  
+ou directement du Bare Metal.
 
-Embedded Automotive : Hardware -> Hyperviseur temps réel -> OS minimal -> K3s -> Conteneurs critiques.
+### Is Kubernetes replacing virtualization?
 
-Financial : Serveur dédié -> VM avec isolation stricte -> Kubernetes dédié (pas de multi-tenant) -> Conteneurs.
+Non. Il l'abstrait.
 
-8. Design a production architecture (Conception Production)
-Pour ton fichier architecture-notes.md, propose cette structure :
+- Kubernetes gère les applications  
+- La virtualisation gère l'infrastructure  
+- Ils sont complémentaires  
 
-Architecture Proposée :
+### Cloud Stack Examples
 
-High Availability (HA) : Cluster Kubernetes avec au moins 3 Worker Nodes répartis sur plusieurs zones de disponibilité (AZ).
+**Cloud Data Center**  
+Serveur Physique → Hyperviseur → VM → Linux → Kubernetes → Conteneur  
 
-Base de données : Sortie du cluster Kubernetes. Utilisation d'un service managé (ex: AWS RDS ou Google Cloud SQL) pour gérer automatiquement les backups, la réplication et le failover.
+**Embedded Automotive**  
+Hardware → Hyperviseur temps réel → OS minimal → k3s → Conteneurs critiques  
 
-Ingress Controller : Nginx ou Traefik pour gérer l'entrée HTTPS et le routage.
+**Financial**  
+Serveur dédié → VM avec isolation stricte → Kubernetes dédié (pas de multi-tenant) → Conteneurs  
 
-Monitoring : Prometheus pour les métriques + Grafana pour la visualisation.
+---
 
-Logging : EFK Stack (Elasticsearch, Fluentd, Kibana) ou Loki pour centraliser les logs des conteneurs.
+## 8 - Design a Production Architecture
 
-Répartition :
+### Architecture Proposée
 
-In Kubernetes : L'application Quote (stateless), les Jobs, le cache (Redis), l'Ingress Controller.
+**High Availability (HA)**  
+Cluster Kubernetes avec au moins 3 Worker Nodes répartis sur plusieurs zones de disponibilité.
 
-In VMs : Les nœuds Kubernetes eux-mêmes (Control Plane et Workers).
+**Base de données**  
+Sortie du cluster Kubernetes.  
+Utilisation d'un service managé (ex : AWS RDS ou Google Cloud SQL) pour gérer backups, réplication et failover.
 
-Outside Cluster : PostgreSQL (Managé), Registre d'images (Docker Hub/ECR), DNS, Load Balancer Cloud.
+**Ingress Controller**  
+Nginx ou Traefik pour gérer HTTPS et le routage.
 
-9. Required Extension: Secret-based configuration
-Why is this better than plain-text?
+**Monitoring**  
+Prometheus + Grafana.
 
-Sécurité : Les mots de passe ne sont pas visibles dans le code source (git) ni dans la sortie standard de kubectl get deploy -o yaml.
+**Logging**  
+EFK Stack (Elasticsearch, Fluentd, Kibana) ou Loki.
 
-Gestion : On peut mettre à jour les secrets sans redéployer l'image (juste redémarrer les pods).
+### Répartition
 
-Contrôle d'accès : On peut restreindre qui a le droit de voir les Secrets via le RBAC Kubernetes.
+**In Kubernetes**
+- Application Quote (stateless)
+- Jobs
+- Cache (Redis)
+- Ingress Controller
 
-Is a Secret encrypted by default?
+**In VMs**
+- Nœuds Kubernetes (Control Plane + Workers)
 
-Non. Par défaut, les Secrets sont seulement encodés en Base64 (facilement décodables).
+**Outside Cluster**
+- PostgreSQL managé
+- Registre d'images (Docker Hub / ECR)
+- DNS
+- Load Balancer Cloud
 
-Où ? Ils sont stockés dans la base de données etcd de Kubernetes. Pour qu'ils soient chiffrés, l'administrateur du cluster doit activer Encryption at Rest au niveau de l'API Server.
+---
 
-10. Optional: Architecture critique (Critique rapide)
-Pour finir ton exercice, ajoute cette critique honnête de ton design actuel :
+## 9 - Secret-Based Configuration
 
-Single Point of Failure (SPOF) : La base de données PostgreSQL est une instance unique. Si elle tombe, l'app ne peut plus lire/écrire de citations.
+### Why is this better than plain-text?
 
-Persistance : Si le pod DB est supprimé, les données sont perdues (sauf si un PersistentVolumeClaim est configuré, ce qui n'est pas explicite dans le lab de base).
+- Sécurité : les mots de passe ne sont pas visibles dans Git ni dans `kubectl get deploy -o yaml`
+- Gestion : mise à jour des secrets sans reconstruire l'image
+- Contrôle d'accès : restriction via RBAC Kubernetes
 
-Sécurité : Bien que nous utilisions des Secrets, nous utilisons le compte root ou admin par défaut de la DB, ce qui n'est pas idéal (principe du moindre privilège).
+### Is a Secret encrypted by default?
+
+Non.
+
+Par défaut :
+- Encodé en Base64 (facilement décodable)
+- Stocké dans la base etcd
+
+Pour un vrai chiffrement :
+- Activer **Encryption at Rest** au niveau de l'API Server
+
+---
+
+## 10 - Architecture Critique
+
+### Single Point of Failure (SPOF)
+
+La base PostgreSQL est une instance unique.  
+Si elle tombe, l'application ne peut plus lire/écrire.
+
+### Persistance
+
+Si le Pod DB est supprimé, les données sont perdues  
+(sauf si un PersistentVolumeClaim est configuré).
+
+### Sécurité
+
+Même avec des Secrets, utiliser le compte root/admin par défaut de la DB n'est pas recommandé.  
+Principe du moindre privilège à appliquer.
