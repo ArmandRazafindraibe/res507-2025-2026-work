@@ -37,3 +37,14 @@ spec:
             port: 3000
           initialDelaySeconds: 5
           periodSeconds: 5
+        env:
+        - name: quote 
+          valueFrom:
+            secretKeyRef:
+              name: quote-db-secret
+              key: quote
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: quote-db-secret
+              key: quote
