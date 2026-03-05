@@ -1,11 +1,11 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: Deployment   
 metadata:
   name: quote-app
 spec:
   replicas: 1
   selector:
-    matchLabels:
+    matchLabels:  
       app: quote-app
   template:
     metadata:
