@@ -1,5 +1,4 @@
 ---
-# 1. PersistentVolumeClaim to request storage
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -12,7 +11,6 @@ spec:
       storage: 1Gi
 
 ---
-# 2. Deployment to run the PostgreSQL Pod
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,14 +31,12 @@ spec:
           ports:
             - containerPort: 5432
           env:
-            # Note: In production, use Kubernetes Secrets for credentials!
             - name: POSTGRES_USER
               value: "admin"
             - name: POSTGRES_PASSWORD
               value: "secretpassword"
             - name: POSTGRES_DB
               value: "testdb"
-          # Mount the volume to PostgreSQL's data directory
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
@@ -50,7 +46,6 @@ spec:
             claimName: postgres-pvc
 
 ---
-# 3. Service for internal cluster connectivity
 apiVersion: v1
 kind: Service
 metadata:
@@ -62,4 +57,4 @@ spec:
     - protocol: TCP
       port: 5432
       targetPort: 5432
-  type: ClusterIP # Keeps the database internal to the cluster
+  type: ClusterIP 
